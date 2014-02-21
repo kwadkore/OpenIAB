@@ -316,6 +316,22 @@ public class OpenIabHelper {
         checkSettings(options, context);
     }
 
+    private void startAppstoreBillingServiceSetupAsync(
+            final IabHelper.OnIabSetupFinishedListener listener) {
+        if (mAppstoreBillingService == null) {
+            return;
+        }
+        new Thread() {
+            public void run() {
+                mAppstoreBillingService.startSetup(new OnIabSetupFinishedListener() {
+                    public void onIabSetupFinished(IabResult result) {
+                        fireSetupFinished(listener, result);
+                    }
+                });
+            }
+        }.start();
+    }
+
     /**
      *  Discover available stores and select the best billing service. 
      *  Calls listener when service is found.
@@ -326,10 +342,43 @@ public class OpenIabHelper {
         if (listener == null){
             throw new IllegalArgumentException("Setup listener must be not null!");
         }
-        if (setupState != SETUP_RESULT_NOT_STARTED) {
+        if (setupState != SETUP_RESULT_NOT_STARTED && setupState != SETUP_RESULT_FAILED) {
+            // Try to setup if it hasn't been set up already or the last setup
+            // failed.
             String state = setupStateToString(setupState);
             throw new IllegalStateException("Couldn't be set up. Current state: " + state);
         }
+
+        String installerName = context.getPackageManager().getInstallerPackageName(
+                context.getPackageName());
+        if (installerName != null) {
+            if (installerName.equals("com.android.vending")) {
+                final String publicKey = options.verifyMode == Options.VERIFY_SKIP ? null
+                        : options.storeKeys.get(OpenIabHelper.NAME_GOOGLE);
+                mAppstore = new GooglePlay(context, publicKey);
+                mAppstoreBillingService = mAppstore.getInAppBillingService();
+                startAppstoreBillingServiceSetupAsync(listener);
+                return;
+            } else if (installerName.equals("com.amazon.venezia")) {
+                mAppstore = new AmazonAppstore(context);
+                mAppstoreBillingService = mAppstore.getInAppBillingService();
+                startAppstoreBillingServiceSetupAsync(listener);
+                return;
+            } else if (installerName.equals("com.sec.android.app.samsungapps")) {
+                samsungInSetup = new SamsungApps(activity, options);
+                mAppstore = samsungInSetup;
+                mAppstoreBillingService = mAppstore.getInAppBillingService();
+                startAppstoreBillingServiceSetupAsync(listener);
+                return;
+            } else {
+                Log.e(TAG, "installer '" + installerName
+                        + "' is not checked in setup");
+                // throw new UnsupportedOperationException("installer '" +
+                // installerName
+                // + "' is not checked in setup");
+            }
+        }
+
         this.notifyHandler = new Handler();        
         started = System.currentTimeMillis();
         new Thread(new Runnable() {
@@ -902,6 +951,13 @@ public class OpenIabHelper {
                 }
             }
         })).start();
+    }
+
+    /**
+     * @return True if this OpenIabHelper instance is set up successfully.
+     */
+    public boolean setupSuccessful() {
+        return setupState == SETUP_RESULT_SUCCESSFUL;
     }
 
     // Checks that setup was done; if not, throws an exception.

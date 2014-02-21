@@ -163,7 +163,9 @@ public class AmazonAppstoreBillingService extends BasePurchasingObserver impleme
         
         if (!currentUserId.equals(purchaseUpdatesResponse.getUserId())) {
             if (mDebugLog) Log.w(TAG, "onPurchaseUpdatesResponse() Current UserId: " + currentUserId + ", purchase UserId: " + purchaseUpdatesResponse.getUserId());
-            inventoryLatch.countDown();
+            if (inventoryLatch != null) {
+                inventoryLatch.countDown();
+            }
             return;
         }
         // TODO: do something with this
