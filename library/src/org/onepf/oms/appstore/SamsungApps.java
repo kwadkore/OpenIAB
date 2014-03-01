@@ -63,7 +63,8 @@ public class SamsungApps extends DefaultAppstore {
     private static final String TAG = SamsungApps.class.getSimpleName();
 
     private static final int IAP_SIGNATURE_HASHCODE = 0x7a7eaf4b;
-    public static final String IAP_PACKAGE_NAME = "com.sec.android.iap";
+
+    public static String IAP_PACKAGE_NAME = "com.sec.android.iap";
     public static final String IAP_SERVICE_NAME = "com.sec.android.iap.service.iapService";
 
     private AppstoreInAppBillingService billingService;

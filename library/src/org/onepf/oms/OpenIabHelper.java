@@ -332,6 +332,8 @@ public class OpenIabHelper {
         }.start();
     }
 
+    private static boolean useNew = true;
+
     /**
      *  Discover available stores and select the best billing service. 
      *  Calls listener when service is found.
@@ -349,33 +351,36 @@ public class OpenIabHelper {
             throw new IllegalStateException("Couldn't be set up. Current state: " + state);
         }
 
-        String installerName = context.getPackageManager().getInstallerPackageName(
-                context.getPackageName());
-        if (installerName != null) {
-            if (installerName.equals("com.android.vending")) {
-                final String publicKey = options.verifyMode == Options.VERIFY_SKIP ? null
-                        : options.storeKeys.get(OpenIabHelper.NAME_GOOGLE);
-                mAppstore = new GooglePlay(context, publicKey);
-                mAppstoreBillingService = mAppstore.getInAppBillingService();
-                startAppstoreBillingServiceSetupAsync(listener);
-                return;
-            } else if (installerName.equals("com.amazon.venezia")) {
-                mAppstore = new AmazonAppstore(context);
-                mAppstoreBillingService = mAppstore.getInAppBillingService();
-                startAppstoreBillingServiceSetupAsync(listener);
-                return;
-            } else if (installerName.equals("com.sec.android.app.samsungapps")) {
-                samsungInSetup = new SamsungApps(activity, options);
-                mAppstore = samsungInSetup;
-                mAppstoreBillingService = mAppstore.getInAppBillingService();
-                startAppstoreBillingServiceSetupAsync(listener);
-                return;
-            } else {
-                Log.e(TAG, "installer '" + installerName
-                        + "' is not checked in setup");
-                // throw new UnsupportedOperationException("installer '" +
-                // installerName
-                // + "' is not checked in setup");
+        if (useNew) {
+            String installerName = context.getPackageManager().getInstallerPackageName(
+                    context.getPackageName());
+            if (installerName != null) {
+                if (installerName.equals("com.android.vending")) {
+                    final String publicKey = options.verifyMode == Options.VERIFY_SKIP ? null
+                            : options.storeKeys.get(OpenIabHelper.NAME_GOOGLE);
+                    mAppstore = new GooglePlay(context, publicKey);
+                    mAppstoreBillingService = mAppstore.getInAppBillingService();
+                    startAppstoreBillingServiceSetupAsync(listener);
+                    return;
+                } else if (installerName.equals("com.amazon.venezia")) {
+                    mAppstore = new AmazonAppstore(context);
+                    mAppstoreBillingService = mAppstore.getInAppBillingService();
+                    startAppstoreBillingServiceSetupAsync(listener);
+                    return;
+                } else if (installerName.equals("com.sec.android.app.samsungapps")) {
+                    samsungInSetup = new SamsungApps(activity, options);
+                    mAppstore = samsungInSetup;
+                    mAppstoreBillingService = mAppstore.getInAppBillingService();
+                    startAppstoreBillingServiceSetupAsync(listener);
+                    return;
+                } else {
+                    // Store isn't supported in this part of the code. Maybe old
+                    // version will pick up something. startSetup would have to
+                    // be called again.
+                    useNew = false;
+                    throw new UnsupportedOperationException("installer '" + installerName
+                            + "' is not checked in setup");
+                }
             }
         }
 

@@ -156,11 +156,21 @@ public class SamsungAppsBillingService implements AppstoreInAppBillingService {
     @Override
     public void startSetup(final OnIabSetupFinishedListener listener) {
         this.setupListener = listener;
+        try {
+            ComponentName com = new ComponentName(SamsungApps.IAP_PACKAGE_NAME,
+                    ACCOUNT_ACTIVITY_NAME);
+            Intent intent = new Intent();
+            intent.setComponent(com);
+            activity.startActivityForResult(intent, options.samsungCertificationRequestCode);
+        } catch (Exception e) {
+            SamsungApps.IAP_PACKAGE_NAME = "com.sec.android.app.samsungapps";
 
-        ComponentName com = new ComponentName(SamsungApps.IAP_PACKAGE_NAME, ACCOUNT_ACTIVITY_NAME);
-        Intent intent = new Intent();
-        intent.setComponent(com);
-        activity.startActivityForResult(intent, options.samsungCertificationRequestCode);
+            ComponentName com = new ComponentName(SamsungApps.IAP_PACKAGE_NAME,
+                    ACCOUNT_ACTIVITY_NAME);
+            Intent intent = new Intent();
+            intent.setComponent(com);
+            activity.startActivityForResult(intent, options.samsungCertificationRequestCode);
+        }
     }
 
     @Override
