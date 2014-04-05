@@ -34,6 +34,7 @@ import org.onepf.oms.appstore.OpenAppstore;
 import org.onepf.oms.appstore.SamsungApps;
 import org.onepf.oms.appstore.SamsungAppsBillingService;
 import org.onepf.oms.appstore.TStore;
+import org.onepf.oms.appstore.NokiaStore;
 import org.onepf.oms.appstore.FortumoStore;
 import org.onepf.oms.appstore.googleUtils.IabException;
 import org.onepf.oms.appstore.googleUtils.IabHelper;
@@ -141,6 +142,7 @@ public class OpenIabHelper {
     public static final String NAME_SAMSUNG = "com.samsung.apps";
     public static final String NAME_FORTUMO = "com.fortumo.billing";
     public static final String NAME_YANDEX = "com.yandex.store";
+    public static final String NAME_NOKIA = "com.nokia.nstore";
 
     /** 
      * NOTE: used as sync object in related methods<br>
@@ -415,6 +417,7 @@ public class OpenIabHelper {
                         // try it only if samsung SKUs are specified
                         stores2check.add(new SamsungApps(activity, options));
                     }
+                    stores2check.add(new NokiaStore(context));
                 }
 
                 //todo redo
@@ -697,7 +700,7 @@ public class OpenIabHelper {
         final Intent intentAppstoreServices = new Intent(BIND_INTENT);
         List<ResolveInfo> infoList = packageManager.queryIntentServices(intentAppstoreServices, 0);
         final List<Appstore> result = dest != null ? dest : new ArrayList<Appstore>(infoList != null ? infoList.size() : 0);
-        if (result.isEmpty()) {
+        if (infoList == null || infoList.isEmpty()) {
             return result;
         }
         final CountDownLatch storesToCheck = new CountDownLatch(infoList.size());

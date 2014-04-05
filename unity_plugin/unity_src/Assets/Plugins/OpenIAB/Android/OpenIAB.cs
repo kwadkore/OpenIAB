@@ -13,6 +13,7 @@ namespace OnePF
         public static readonly string STORE_GOOGLE;
         public static readonly string STORE_AMAZON;
         public static readonly string STORE_SAMSUNG;
+        public static readonly string STORE_NOKIA;
 
 #if UNITY_ANDROID
         private static AndroidJavaObject _plugin;
@@ -24,6 +25,7 @@ namespace OnePF
                 STORE_GOOGLE = "STORE_GOOGLE";
                 STORE_AMAZON = "STORE_AMAZON";
                 STORE_SAMSUNG = "STORE_SAMSUNG";
+                STORE_NOKIA = "STORE_NOKIA";
                 return;
             }
 
@@ -36,6 +38,7 @@ namespace OnePF
                 STORE_GOOGLE = pluginClass.GetStatic<string>("STORE_GOOGLE");
                 STORE_AMAZON = pluginClass.GetStatic<string>("STORE_AMAZON");
                 STORE_SAMSUNG = pluginClass.GetStatic<string>("STORE_SAMSUNG");
+                STORE_NOKIA = pluginClass.GetStatic<string>("STORE_NOKIA");
             }
         }
 
@@ -144,18 +147,12 @@ namespace OnePF
             AndroidJNI.CallVoidMethod(_plugin.GetRawObject(), methodId, new jvalue[] { });
         }
 
-        public void queryInventory(string[] inAppSkus)
+        public void queryInventory(string[] skus)
         {
-            if (!IsDevice())
-            {
-                return;
-            }
-            jvalue[] args = AndroidJNIHelper.CreateJNIArgArray(new object[] { inAppSkus });
-            IntPtr methodId = AndroidJNI.GetMethodID(_plugin.GetRawClass(), "queryInventory", "([Ljava/lang/String;)V");
-            AndroidJNI.CallVoidMethod(_plugin.GetRawObject(), methodId, args);
+            queryInventory(skus, skus);
         }
 
-        public void queryInventory(string[] inAppSkus, string[] subsSkus)
+        private void queryInventory(string[] inAppSkus, string[] subsSkus)
         {
             if (!IsDevice())
             {
@@ -222,6 +219,7 @@ namespace OnePF
             STORE_GOOGLE = "STORE_GOOGLE";
             STORE_AMAZON = "STORE_AMAZON";
             STORE_SAMSUNG = "STORE_SAMSUNG";
+            STORE_NOKIA = "STORE_NOKIA";
 		}
 #endif
     }
