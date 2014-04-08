@@ -93,7 +93,7 @@ public class AmazonAppstoreBillingService extends BasePurchasingObserver impleme
     private IabHelper.OnIabSetupFinishedListener setupListener;
 
     /** TODO: consider removal inventoryLatch or using carefully */
-    private CountDownLatch inventoryLatch;
+    private CountDownLatch inventoryLatch = new CountDownLatch(0);
 
     public AmazonAppstoreBillingService(Context context) {
         super(context);
