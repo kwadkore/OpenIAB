@@ -359,6 +359,9 @@ public class OpenIabHelper {
             throw new IllegalStateException("Couldn't be set up. Current state: " + state);
         }
 
+        this.notifyHandler = new Handler();
+        started = System.currentTimeMillis();
+
         if (useNew) {
             String installerName = context.getPackageManager().getInstallerPackageName(
                     context.getPackageName());
@@ -392,8 +395,6 @@ public class OpenIabHelper {
             }
         }
 
-        this.notifyHandler = new Handler();        
-        started = System.currentTimeMillis();
         new Thread(new Runnable() {
             public void run() {
                 List<Appstore> stores2check = new ArrayList<Appstore>();
