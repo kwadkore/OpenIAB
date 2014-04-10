@@ -87,7 +87,7 @@ public class AmazonAppstoreBillingService extends BasePurchasingObserver impleme
      * <li>{@link #queryInventory(boolean, List, List)}
      * <li>{@link #onPurchaseUpdatesResponse(PurchaseUpdatesResponse)}
      * <li>{@link #onItemDataResponse(ItemDataResponse)}*/
-    private Inventory inventory;
+    private Inventory inventory = new Inventory();
     
     /** If not null will be notified from  */
     private IabHelper.OnIabSetupFinishedListener setupListener;
