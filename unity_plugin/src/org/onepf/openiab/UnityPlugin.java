@@ -34,7 +34,7 @@ public class UnityPlugin {
     public static final String STORE_AMAZON = OpenIabHelper.NAME_AMAZON;
     public static final String STORE_TSTORE = OpenIabHelper.NAME_TSTORE;
     public static final String STORE_SAMSUNG = OpenIabHelper.NAME_SAMSUNG;
-    public static final String STORE_YANDEX = "YandexPublicKey";
+    public static final String STORE_YANDEX = OpenIabHelper.NAME_YANDEX;
 	public static final String STORE_NOKIA = OpenIabHelper.NAME_NOKIA;
 
     // (arbitrary) request code for the purchase flow
@@ -216,7 +216,7 @@ public class UnityPlugin {
             Log.d(TAG, "Purchase finished: " + result + ", purchase: " + purchase);
             if (result.isFailure()) {
                 Log.e(TAG, "Error purchasing: " + result);
-                UnityPlayer.UnitySendMessage(EVENT_MANAGER, PURCHASE_FAILED_CALLBACK, result.getMessage());
+                UnityPlayer.UnitySendMessage(EVENT_MANAGER, PURCHASE_FAILED_CALLBACK, result.getResponse()+"|"+result.getMessage());
                 return;
             }
             Log.d(TAG, "Purchase successful.");
@@ -224,7 +224,7 @@ public class UnityPlugin {
             try {
                 jsonPurchase = purchaseToJson(purchase);
             } catch (JSONException e) {
-                UnityPlayer.UnitySendMessage(EVENT_MANAGER, PURCHASE_FAILED_CALLBACK, "Couldn't serialize the purchase");
+                UnityPlayer.UnitySendMessage(EVENT_MANAGER, PURCHASE_FAILED_CALLBACK, "-1|Couldn't serialize the purchase");
                 return;
             }
             UnityPlayer.UnitySendMessage(EVENT_MANAGER, PURCHASE_SUCCEEDED_CALLBACK, jsonPurchase);
@@ -323,6 +323,18 @@ public class UnityPlugin {
         } catch (Exception ex) {
             Log.d(TAG, "destroyBroadcasts exception:\n" + ex.getMessage());
         }
+    }
+
+    public boolean isDebugLog() {
+        return OpenIabHelper.isDebugLog();
+    }
+
+    public void enableDebugLogging(boolean enabled) {
+        OpenIabHelper.enableDebugLogging(enabled);
+    }
+
+    public void enableDebugLogging(boolean enabled, String tag) {
+        OpenIabHelper.enableDebugLogging(enabled, tag);
     }
 
     // Yandex specific

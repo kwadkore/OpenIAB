@@ -29,13 +29,14 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.onepf.oms.appstore.AmazonAppstore;
+import org.onepf.oms.appstore.AmazonAppstoreBillingService;
+import org.onepf.oms.appstore.FortumoStore;
 import org.onepf.oms.appstore.GooglePlay;
+import org.onepf.oms.appstore.NokiaStore;
 import org.onepf.oms.appstore.OpenAppstore;
 import org.onepf.oms.appstore.SamsungApps;
 import org.onepf.oms.appstore.SamsungAppsBillingService;
 import org.onepf.oms.appstore.TStore;
-import org.onepf.oms.appstore.NokiaStore;
-import org.onepf.oms.appstore.FortumoStore;
 import org.onepf.oms.appstore.googleUtils.IabException;
 import org.onepf.oms.appstore.googleUtils.IabHelper;
 import org.onepf.oms.appstore.googleUtils.IabHelper.OnIabPurchaseFinishedListener;
@@ -56,6 +57,7 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.pm.ResolveInfo;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.os.RemoteException;
 import android.util.Log;
 
@@ -411,8 +413,19 @@ public class OpenIabHelper {
                                 : options.storeKeys.get(OpenIabHelper.NAME_GOOGLE);
                         stores2check.add(new GooglePlay(context, publicKey));
                     }
-                    stores2check.add(new AmazonAppstore(context));
-                    stores2check.add(new TStore(context, options.storeKeys.get(OpenIabHelper.NAME_TSTORE)));
+                    
+                    // try AmazonApps if in-app-purchasing.jar with Amazon SDK is compiled with app 
+                    try {
+                        OpenIabHelper.class.getClassLoader().loadClass("com.amazon.inapp.purchasing.PurchasingManager");
+                        stores2check.add(new AmazonAppstore(context));
+                    } catch (ClassNotFoundException e) {}
+
+                    // try T-Store if iap_plugin-dev.jar with T-Store SDK is compiled with app 
+                    try {
+                        TStore.class.getClassLoader().loadClass("com.skplanet.dodo.IapPlugin");
+                        stores2check.add(new TStore(context, options.storeKeys.get(OpenIabHelper.NAME_TSTORE)));
+                    } catch (ClassNotFoundException e) {}
+                    
                     if (getAllStoreSkus(NAME_SAMSUNG).size() > 0) {  
                         // SamsungApps shows lot of UI stuff during init 
                         // try it only if samsung SKUs are specified
@@ -501,6 +514,15 @@ public class OpenIabHelper {
         }, "openiab-setup").start();
     }
 
+    /**
+     * Must be called after setup is finished. See {@link #startSetup(OnIabSetupFinishedListener)}
+     * @return <code>null</code> if no appstore connected, otherwise name of Appstore OpenIAB has connected to.  
+     */
+    public synchronized String getConnectedAppstoreName() {
+        if (mAppstore == null) return null;
+        return mAppstore.getAppstoreName();
+    }
+    
     /** Check options are valid */
     public static void checkOptions(Options options) {
         if (options.verifyMode != Options.VERIFY_SKIP && options.storeKeys != null) { // check publicKeys. Must be not null and valid
@@ -548,8 +570,8 @@ public class OpenIabHelper {
             checkPermission(context, "android.permission.INTERNET", manifestResultBuilder);
             checkPermission(context, "android.permission.ACCESS_NETWORK_STATE", manifestResultBuilder);
             checkPermission(context, "android.permission.READ_PHONE_STATE", manifestResultBuilder);
-            checkPermission(context, "android.permission.RECEIVE_SMS", manifestResultBuilder);
-            checkPermission(context, "android.permission.SEND_SMS", manifestResultBuilder);
+//            checkPermission(context, "android.permission.RECEIVE_SMS", manifestResultBuilder);
+//            checkPermission(context, "android.permission.SEND_SMS", manifestResultBuilder);
 
             Intent paymentActivityIntent = new Intent();
             paymentActivityIntent.setClassName(context.getPackageName(), "mp.MpActivity");
@@ -697,6 +719,10 @@ public class OpenIabHelper {
      * @return dest or new List with discovered Appstores   
      */
     public static List<Appstore> discoverOpenStores(final Context context, final List<Appstore> dest, final Options options) {
+        if (Thread.currentThread().equals(Looper.getMainLooper().getThread())) {
+            throw new IllegalStateException("Must not be called from main thread. "
+                    + "Service interaction will be blocked");
+        }
         PackageManager packageManager = context.getPackageManager();
         final Intent intentAppstoreServices = new Intent(BIND_INTENT);
         List<ResolveInfo> infoList = packageManager.queryIntentServices(intentAppstoreServices, 0);

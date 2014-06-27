@@ -176,7 +176,8 @@ public class FortumoBillingService implements AppstoreInAppBillingService {
                         if (paymentResponse.getProductName().equals(fortumoProduct.getProductId())) {
                             inventory.addPurchase(purchaseFromPaymentResponse(context, paymentResponse));
                             if (querySkuDetails) {
-                                fortumoProduct.toSkuDetails(paymentResponse.getPriceAmount() + " " + paymentResponse.getPriceCurrency());
+                                String fortumoPrice = getSkuPrice(fortumoProduct);
+                                inventory.addSkuDetails(fortumoProduct.toSkuDetails(fortumoPrice));
                             }
                             break;
                         }
@@ -189,13 +190,29 @@ public class FortumoBillingService implements AppstoreInAppBillingService {
             for (String name : moreItemSkus) {
                 final FortumoProduct fortumoProduct = inappsMap.get(name);
                 if (fortumoProduct != null) {
-                    inventory.addSkuDetails(fortumoProduct.toSkuDetails(fortumoProduct.getFortumoPrice()));
+                    String fortumoPrice = getSkuPrice(fortumoProduct);
+                    inventory.addSkuDetails(fortumoProduct.toSkuDetails(fortumoPrice));
                 } else {
                     throw new IabException(IabHelper.BILLING_RESPONSE_RESULT_DEVELOPER_ERROR, String.format("Data %s not found", name));
                 }
             }
         }
         return inventory;
+    }
+
+    private String getSkuPrice(FortumoProduct fortumoProduct) throws IabException {
+        String fortumoPrice = fortumoProduct.getFortumoPrice();
+        if (!TextUtils.isEmpty(fortumoPrice)) {
+            final String serviceId = isNook ? fortumoProduct.getNookServiceId() : fortumoProduct.getServiceId();
+            final String appSecret = isNook ? fortumoProduct.getNookInAppSecret() : fortumoProduct.getInAppSecret();
+            MpUtils.fetchPaymentData(context, serviceId,
+                    appSecret);
+            final List fetchedPriceData = MpUtils.getFetchedPriceData(context, serviceId, appSecret);
+            if (fetchedPriceData != null && !fetchedPriceData.isEmpty()) {
+                fortumoPrice = (String) fetchedPriceData.get(0);
+            }
+        }
+        return fortumoPrice;
     }
 
     @Override
@@ -244,6 +261,7 @@ public class FortumoBillingService implements AppstoreInAppBillingService {
         final Pair<List<InappBaseProduct>, List<InappSubscriptionProduct>> parse = inappsXMLParser.parse(context);
         final List<InappBaseProduct> allItems = parse.first;
         final Map<String, FortumoProductParser.FortumoDetails> fortumoSkuDetailsMap = FortumoProductParser.parse(context, isNook);
+        int itemsNotSupportedCount = 0;
         for (InappBaseProduct item : allItems) {
             final String productId = item.getProductId();
             final FortumoProductParser.FortumoDetails fortumoDetails = fortumoSkuDetailsMap.get(productId);
@@ -257,16 +275,26 @@ public class FortumoBillingService implements AppstoreInAppBillingService {
                 final boolean supportedOperator = MpUtils.isSupportedOperator(context, serviceId, serviceInAppSecret);
                 if (supportedOperator) {
                     fetchedPriceData = MpUtils.getFetchedPriceData(context, serviceId, serviceInAppSecret);
-                    if (fetchedPriceData == null || fetchedPriceData.size() == 0) {
-                        throw new IabException(IabHelper.IABHELPER_ERROR_BASE, "Can't obtain fortumoPrice details from  the server.");
-                    }
                 } else {
-                    throw new IabException(IabHelper.IABHELPER_ERROR_BASE, "Carrier is not supported.");
+                    if (isDebugLog()) {
+                        Log.d(TAG, productId + " not available for this carrier");
+                    }
+                    itemsNotSupportedCount++;
+                    continue;
                 }
             }
-            FortumoProduct fortumoProduct = new FortumoProduct(item, fortumoDetails, (String) fetchedPriceData.get(0));
+            String price = null;
+            if (fetchedPriceData != null && !fetchedPriceData.isEmpty()) {
+                price = (String) fetchedPriceData.get(0);
+            }
+            FortumoProduct fortumoProduct = new FortumoProduct(item, fortumoDetails, price);
             map.put(productId, fortumoProduct);
         }
+
+        if (itemsNotSupportedCount == allItems.size()) {
+            throw new IabException(IabHelper.IABHELPER_ERROR_BASE, "No inventory available for this carrier/country.");
+        }
+
         return map;
     }
 

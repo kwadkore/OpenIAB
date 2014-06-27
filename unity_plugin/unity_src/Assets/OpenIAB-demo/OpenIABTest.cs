@@ -3,9 +3,17 @@ using OnePF;
 using System.Collections.Generic;
 
 public class OpenIABTest : MonoBehaviour {
-#if UNITY_ANDROID
-    const string STORE_CUSTOM = "store";
     const string SKU = "sku";
+
+    const string SKU_AMMO = "sku_ammo_general";
+    const string SKU_MEDKIT = "sku_medkit_general";
+    const string SKU_SUBSCRIPTION = "sku_sub_general";
+
+#pragma warning disable 0414
+    string _label = "";
+#pragma warning restore 0414
+
+    bool _isInitialized = false;
 
     private void OnEnable() {
         // Listen to all events for illustration purposes
@@ -31,11 +39,15 @@ public class OpenIABTest : MonoBehaviour {
     }
 
     private void Start() {
-        // Map sku for different stores
-        OpenIAB.mapSku(SKU, OpenIAB_Android.STORE_GOOGLE, "google-play.sku");
-        OpenIAB.mapSku(SKU, STORE_CUSTOM, "onepf.sku");
+        // Map skus for different stores
+        OpenIAB.mapSku(SKU, OpenIAB_Android.STORE_GOOGLE, "sku");
+        
+        OpenIAB.mapSku(SKU_AMMO, OpenIAB_WP8.STORE, "sku_ammo");
+        OpenIAB.mapSku(SKU_MEDKIT, OpenIAB_WP8.STORE, "sku_medkit");
+        OpenIAB.mapSku(SKU_SUBSCRIPTION, OpenIAB_WP8.STORE, "sku_sub");
     }
 
+#if UNITY_ANDROID
     private void OnGUI() {
         float yPos = 5.0f;
         float xPos = 5.0f;
@@ -45,7 +57,7 @@ public class OpenIABTest : MonoBehaviour {
 
         if (GUI.Button(new Rect(xPos, yPos, width, height), "Initialize OpenIAB")) {
             // Application public key
-            var public_key = "key";
+            var public_key = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqibEPHCtfPm3Rn26gbE6vhCc1d6A072im+oWNlkUAJYV//pt1vCkYLqkkw/P2esPSWaw1nt66650vfVYc3sYY6L782n/C+IvZWQt0EaLrqsSoNfN5VqPhPeGf3wqsOvbKw9YqZWyKL4ddZUzRUPex5xIzjHHm3qIJI5v7iFJHOxOj0bLuEG8lH0Ljt/w2bNe4o0XXoshYDqpzIKmKy6OYNQOs8iBTJlfSmPrlGudmldW6CsuAKeVGm+Z+2xx3Xxsx3eSwEgEaUc1ZsMWSGsV6dXgc3JrUvK23JRJUu8X5Ec1OQLyxL3VelD5f0iKVTJ1kw59tMAVZ7DDpzPggWpUkwIDAQAB";
 
             var options = new Options();
             options.verifyMode = OptionsVerifyMode.VERIFY_SKIP;
@@ -56,6 +68,9 @@ public class OpenIABTest : MonoBehaviour {
             // Transmit options and start the service
             OpenIAB.init(options);
         }
+
+        if (!_isInitialized)
+            return;
 
         if (GUI.Button(new Rect(xPos, yPos += heightPlus, width, height), "Test Purchase")) {
             OpenIAB.purchaseProduct("android.test.purchased");
@@ -77,19 +92,40 @@ public class OpenIABTest : MonoBehaviour {
         }
 
         if (GUI.Button(new Rect(xPos, yPos += heightPlus, width, height), "Query Inventory")) {
-            OpenIAB.queryInventory();
+            OpenIAB.queryInventory(new string[] { SKU });
         }
 
         if (GUI.Button(new Rect(xPos, yPos += heightPlus, width, height), "Purchase Real Product")) {
             OpenIAB.purchaseProduct(SKU);
         }
 
-        if (GUI.Button(new Rect(xPos, yPos += heightPlus, width, height), "Stop Billing Service")) {
-            OpenIAB.unbindService();
+        if (GUI.Button(new Rect(xPos, yPos += heightPlus, width, height), "Consume Real Product")) {
+            OpenIAB.consumeProduct(Purchase.CreateFromSku(SKU));
         }
     }
+#endif
+
+#if UNITY_WP8
+    void OnGUI()
+    {
+        if (GUI.Button(new Rect(10, 10, Screen.width * 0.3f, Screen.height * 0.1f), "QUERY INVENTORY"))
+        {
+            OpenIAB.queryInventory(new string[] { SKU_AMMO, SKU_MEDKIT, SKU_SUBSCRIPTION });
+        }
+        if (GUI.Button(new Rect(20 + Screen.width * 0.3f, 10, Screen.width * 0.3f, Screen.height * 0.1f), "Purchase"))
+        {
+            OpenIAB.purchaseProduct(SKU_MEDKIT);
+        }
+        if (GUI.Button(new Rect(30 + Screen.width * 0.6f, 10, Screen.width * 0.3f, Screen.height * 0.1f), "Consume"))
+        {
+            OpenIAB.consumeProduct(Purchase.CreateFromSku(SKU_MEDKIT));
+        }
+        GUI.Label(new Rect(10, 20 + Screen.height * 0.1f, Screen.width, Screen.height), _label);
+    }
+#endif
 
     private void billingSupportedEvent() {
+        _isInitialized = true;
         Debug.Log("billingSupportedEvent");
     }
     private void billingNotSupportedEvent(string error) {
@@ -97,21 +133,27 @@ public class OpenIABTest : MonoBehaviour {
     }
     private void queryInventorySucceededEvent(Inventory inventory) {
         Debug.Log("queryInventorySucceededEvent: " + inventory);
+        if (inventory != null)
+            _label = inventory.ToString();
     }
     private void queryInventoryFailedEvent(string error) {
         Debug.Log("queryInventoryFailedEvent: " + error);
+        _label = error;
     }
     private void purchaseSucceededEvent(Purchase purchase) {
         Debug.Log("purchaseSucceededEvent: " + purchase);
+        _label = "PURCHASED:" + purchase.ToString();
     }
-    private void purchaseFailedEvent(string error) {
-        Debug.Log("purchaseFailedEvent: " + error);
+    private void purchaseFailedEvent(int errorCode, string errorMessage) {
+        Debug.Log("purchaseFailedEvent: " + errorMessage);
+        _label = "Purchase Failed: " + errorMessage;
     }
     private void consumePurchaseSucceededEvent(Purchase purchase) {
         Debug.Log("consumePurchaseSucceededEvent: " + purchase);
+        _label = "CONSUMED: " + purchase.ToString();
     }
     private void consumePurchaseFailedEvent(string error) {
         Debug.Log("consumePurchaseFailedEvent: " + error);
+        _label = "Consume Failed: " + error;
     }
-#endif
 }
