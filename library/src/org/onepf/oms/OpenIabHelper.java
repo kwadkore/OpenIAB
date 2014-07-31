@@ -33,8 +33,6 @@ import org.onepf.oms.appstore.AmazonAppstore;
 import org.onepf.oms.appstore.GooglePlay;
 import org.onepf.oms.appstore.NokiaStore;
 import org.onepf.oms.appstore.OpenAppstore;
-import org.onepf.oms.appstore.SamsungApps;
-import org.onepf.oms.appstore.SamsungAppsBillingService;
 import org.onepf.oms.appstore.googleUtils.IabException;
 import org.onepf.oms.appstore.googleUtils.IabHelper;
 import org.onepf.oms.appstore.googleUtils.IabHelper.OnIabSetupFinishedListener;
@@ -84,10 +82,6 @@ public class OpenIabHelper {
      * Used for all communication with Android services
      */
     private final Context context;
-    /**
-     * Necessary to initialize SamsungApps. For other stuff {@link #context} is used
-     */
-    private Activity activity;
 
     private static final Handler notifyHandler = new Handler(Looper.getMainLooper());
 
@@ -113,11 +107,6 @@ public class OpenIabHelper {
             SETUP_RESULT_FAILED, SETUP_RESULT_NOT_STARTED, SETUP_RESULT_SUCCESSFUL})
     private int setupState = SETUP_RESULT_NOT_STARTED;
 
-    /**
-     * SamsungApps requires {@link #handleActivityResult(int, int, Intent)} but it doesn't
-     * work until setup is completed.
-     */
-    private volatile SamsungApps samsungInSetup;
 
     // Is an asynchronous operation in progress?
     // (only one at a time can be in progress)
@@ -139,8 +128,6 @@ public class OpenIabHelper {
     public static final String NAME_GOOGLE = "com.google.play";
     public static final String NAME_AMAZON = "com.amazon.apps";
     public static final String NAME_TSTORE = "com.tmobile.store";
-    public static final String NAME_SAMSUNG = "com.samsung.apps";
-    public static final String NAME_FORTUMO = "com.fortumo.billing";
     public static final String NAME_YANDEX = "com.yandex.store";
     public static final String NAME_NOKIA = "com.nokia.nstore";
 
@@ -198,13 +185,16 @@ public class OpenIabHelper {
 
     /**
      * @param storeKeys - see {@link Options#storeKeys}
-     * @param context   - if you want to support Samsung Apps you must pass an Activity, in other cases any context is acceptable
-     * @deprecated Use {@link org.onepf.oms.OpenIabHelper#OpenIabHelper(android.content.Context, org.onepf.oms.OpenIabHelper.Options)}
-     * Will be removed in 1.0 release.
-     * <p/>
-     * <p/>
-     * Simple constructor for OpenIabHelper.
-     * <p>See {@link OpenIabHelper#OpenIabHelper(Context, Options)} for details
+     * @param context - any context is acceptable
+     * @deprecated Use
+     *             {@link org.onepf.oms.OpenIabHelper#OpenIabHelper(android.content.Context, org.onepf.oms.OpenIabHelper.Options)}
+     *             Will be removed in 1.0 release.
+     *             <p/>
+     *             <p/>
+     *             Simple constructor for OpenIabHelper.
+     *             <p>
+     *             See {@link OpenIabHelper#OpenIabHelper(Context, Options)} for
+     *             details
      */
     public OpenIabHelper(Context context, Map<String, String> storeKeys) {
         this(context,
@@ -215,15 +205,20 @@ public class OpenIabHelper {
     }
 
     /**
-     * @param storeKeys       - see {@link org.onepf.oms.OpenIabHelper.Options#getStoreKeys()}
-     * @param preferredStores - see {@link org.onepf.oms.OpenIabHelper.Options#getPreferredStoreNames()}
-     * @param context         - if you want to support Samsung Apps you must pass an Activity, in other cases any context is acceptable
-     * @deprecated Use {@link org.onepf.oms.OpenIabHelper#OpenIabHelper(android.content.Context, org.onepf.oms.OpenIabHelper.Options)}
-     * Will be removed in 1.0 release.
-     * <p/>
-     * <p/>
-     * Simple constructor for OpenIabHelper.
-     * <p>See {@link OpenIabHelper#OpenIabHelper(Context, Options)} for details
+     * @param storeKeys - see
+     *            {@link org.onepf.oms.OpenIabHelper.Options#getStoreKeys()}
+     * @param preferredStores - see
+     *            {@link org.onepf.oms.OpenIabHelper.Options#getPreferredStoreNames()}
+     * @param context - any context is acceptable
+     * @deprecated Use
+     *             {@link org.onepf.oms.OpenIabHelper#OpenIabHelper(android.content.Context, org.onepf.oms.OpenIabHelper.Options)}
+     *             Will be removed in 1.0 release.
+     *             <p/>
+     *             <p/>
+     *             Simple constructor for OpenIabHelper.
+     *             <p>
+     *             See {@link OpenIabHelper#OpenIabHelper(Context, Options)} for
+     *             details
      */
     public OpenIabHelper(Context context, Map<String, String> storeKeys, String[] preferredStores) {
         this(context,
@@ -235,15 +230,21 @@ public class OpenIabHelper {
     }
 
     /**
-     * @param storeKeys       - see {@link org.onepf.oms.OpenIabHelper.Options#getStoreKeys()}
-     * @param preferredStores - see {@link org.onepf.oms.OpenIabHelper.Options#getPreferredStoreNames()}
-     * @param availableStores - see {@link org.onepf.oms.OpenIabHelper.Options#getAvailableStores()}
-     * @param context         - if you want to support Samsung Apps you must pass an Activity, in other cases any context is acceptable
-     * @deprecated Use {@link org.onepf.oms.OpenIabHelper#OpenIabHelper(android.content.Context, org.onepf.oms.OpenIabHelper.Options)}
-     * Will be removed in 1.0 release.
-     * <p/>
-     * Simple constructor for OpenIabHelper.
-     * <p>See {@link OpenIabHelper#OpenIabHelper(Context, Options)} for details
+     * @param storeKeys - see
+     *            {@link org.onepf.oms.OpenIabHelper.Options#getStoreKeys()}
+     * @param preferredStores - see
+     *            {@link org.onepf.oms.OpenIabHelper.Options#getPreferredStoreNames()}
+     * @param availableStores - see
+     *            {@link org.onepf.oms.OpenIabHelper.Options#getAvailableStores()}
+     * @param context - any context is acceptable
+     * @deprecated Use
+     *             {@link org.onepf.oms.OpenIabHelper#OpenIabHelper(android.content.Context, org.onepf.oms.OpenIabHelper.Options)}
+     *             Will be removed in 1.0 release.
+     *             <p/>
+     *             Simple constructor for OpenIabHelper.
+     *             <p>
+     *             See {@link OpenIabHelper#OpenIabHelper(Context, Options)} for
+     *             details
      */
     public OpenIabHelper(Context context, Map<String, String> storeKeys, String[] preferredStores, Appstore[] availableStores) {
         this(context,
@@ -256,35 +257,37 @@ public class OpenIabHelper {
     }
 
     /**
-     * Before start ensure you already have <li>
-     * - permission <code>org.onepf.openiab.permission.BILLING</code> in your AndroidManifest.xml<li>
-     * - publicKey for store you decided to work with (you can find it in Developer Console of your store)<li>
-     * - map SKUs for your store if they differs using {@link #mapSku(String, String, String)}</li>
+     * Before start ensure you already have <li>- permission
+     * <code>org.onepf.openiab.permission.BILLING</code> in your
+     * AndroidManifest.xml<li>- publicKey for store you decided to work with
+     * (you can find it in Developer Console of your store)<li>- map SKUs for
+     * your store if they differs using {@link #mapSku(String, String, String)}</li>
      * <p/>
      * <p/>
-     * You can specify publicKeys for stores (excluding Amazon and SamsungApps those don't use
-     * verification based on RSA keys). See {@link Options#storeKeys} for details
+     * You can specify publicKeys for stores (excluding Amazon those don't use
+     * verification based on RSA keys). See {@link Options#storeKeys} for
+     * details
      * <p/>
-     * By default verification will be performed for receipt from every store. To aviod verification
-     * exception OpenIAB doesn't connect to store that key is not specified for
+     * By default verification will be performed for receipt from every store.
+     * To aviod verification exception OpenIAB doesn't connect to store that key
+     * is not specified for
      * <p/>
-     * If you don't want to put publicKey in code and verify receipt remotely, you need to set
-     * {@link Options#verifyMode} to {@link Options#VERIFY_SKIP}.
-     * To make OpenIAB connect even to stores key is not specified for, use {@link Options#VERIFY_ONLY_KNOWN}
+     * If you don't want to put publicKey in code and verify receipt remotely,
+     * you need to set {@link Options#verifyMode} to {@link Options#VERIFY_SKIP}
+     * . To make OpenIAB connect even to stores key is not specified for, use
+     * {@link Options#VERIFY_ONLY_KNOWN}
      * <p/>
-     * {@link org.onepf.oms.OpenIabHelper.Options#getPreferredStoreNames()} is useful option when you test your app on device with multiple
-     * stores installed. Specify store name you want to work with here and it would be selected if you
-     * install application using adb.
-     *
+     * {@link org.onepf.oms.OpenIabHelper.Options#getPreferredStoreNames()} is
+     * useful option when you test your app on device with multiple stores
+     * installed. Specify store name you want to work with here and it would be
+     * selected if you install application using adb.
+     * 
      * @param options - specify all necessary options
-     * @param context - if you want to support Samsung Apps you must pass an Activity, in other cases any context is acceptable
+     * @param context - any context is acceptable
      */
     public OpenIabHelper(Context context, Options options) {
         this.context = context.getApplicationContext();
         this.options = options;
-        if (context instanceof Activity) {
-            this.activity = (Activity) context;
-        }
 
         checkSettings(options, context);
         Logger.init();
@@ -347,12 +350,6 @@ public class OpenIabHelper {
                     mAppstoreBillingService = mAppstore.getInAppBillingService();
                     startAppstoreBillingServiceSetupAsync(listener);
                     return;
-                } else if (installerName.equals("com.sec.android.app.samsungapps")) {
-                    samsungInSetup = new SamsungApps(activity, options);
-                    mAppstore = samsungInSetup;
-                    mAppstoreBillingService = mAppstore.getInAppBillingService();
-                    startAppstoreBillingServiceSetupAsync(listener);
-                    return;
                 } else {
                     // Store isn't supported in this part of the code. Maybe old
                     // version will pick up something. startSetup would have to
@@ -388,11 +385,6 @@ public class OpenIabHelper {
                     } catch (ClassNotFoundException e) {
                     }
 
-                    if (!CollectionUtils.isEmpty(SkuManager.getInstance().getAllStoreSkus(NAME_SAMSUNG))) {
-                        // SamsungApps shows lot of UI stuff during init 
-                        // try it only if samsung SKUs are specified
-                        stores2check.add(new SamsungApps(activity, options));
-                    }
                     //Nokia TODO change logic
                     stores2check.add(new NokiaStore(context));
                     if (!hasRequestedPermission(context, "com.nokia.payment.BILLING")) {
@@ -488,7 +480,6 @@ public class OpenIabHelper {
 
     private static void checkSettings(Options options, Context context) {
         checkOptions(options);
-        checkSamsung(context);
         checkNokia(options, context);
     }
 
@@ -535,37 +526,7 @@ public class OpenIabHelper {
     }
 
 
-    private static void checkSamsung(Context context) {
-        List<String> allStoreSkus = SkuManager.getInstance().getAllStoreSkus(OpenIabHelper.NAME_SAMSUNG);
-        if (!CollectionUtils.isEmpty(allStoreSkus)) { // it means that Samsung is among the candidates
-            for (String sku : allStoreSkus) {
-                SamsungApps.checkSku(sku);
-            }
 
-            if (!(context instanceof Activity)) {
-                //
-                // Unfortunately, SamsungApps requires to launch their own "Certification Activity"
-                // in order to connect to billing service. So it's also needed for OpenIAB.
-                //
-                // Because of SKU for SamsungApps are specified,
-                // intance of Activity needs to be passed to OpenIAB constructor to launch
-                // Samsung Cerfitication Activity.
-                // Activity also need to pass activityResult to OpenIABHelper.handleActivityResult()
-                //
-                //
-                throw new IllegalArgumentException(
-                        "\n "
-                                + "\nContext is not instance of Activity."
-                                + "\nUnfortunately, SamsungApps requires to launch their own Certification Activity "
-                                + "\nin order to connect to billing service. So it's also needed for OpenIAB."
-                                + "\n "
-                                + "\nBecause of SKU for SamsungApps are specified, instance of Activity needs to be passed "
-                                + "\nto OpenIAB constructor to launch Samsung Cerfitication Activity."
-                                + "\nActivity should call OpenIabHelper#handleActivityResult()."
-                                + "\n ");
-            }
-        }
-    }
 
     protected void fireSetupFinished(final IabHelper.OnIabSetupFinishedListener listener, final IabResult result) {
         if (setupState == SETUP_DISPOSED) {
@@ -579,7 +540,6 @@ public class OpenIabHelper {
             Logger.dWithTimeFromUp("fireSetupFinished() === SETUP DONE === result: ", result);
         }
 
-        samsungInSetup = null;
         setupState = result.isSuccess() ? SETUP_RESULT_SUCCESSFUL : SETUP_RESULT_FAILED;
         notifyHandler.post(new Runnable() {
             public void run() {
@@ -845,9 +805,7 @@ public class OpenIabHelper {
 
     public boolean handleActivityResult(int requestCode, int resultCode, Intent data) {
         Logger.dWithTimeFromUp("handleActivityResult() requestCode: ", requestCode, " resultCode: ", resultCode, " data: ", data);
-        if (requestCode == options.samsungCertificationRequestCode && samsungInSetup != null) {
-            return samsungInSetup.getInAppBillingService().handleActivityResult(requestCode, resultCode, data);
-        }
+
         if (setupState != SETUP_RESULT_SUCCESSFUL) {
             Logger.d("handleActivityResult() setup is not done. requestCode: ", requestCode, " resultCode: ", resultCode, " data: ", data);
             return false;
@@ -1156,19 +1114,23 @@ public class OpenIabHelper {
         public static final int VERIFY_ONLY_KNOWN = 2;
 
         /**
-         * @deprecated Use {@link org.onepf.oms.OpenIabHelper.Options#getAvailableStores()}
-         * Will be private since 1.0.
-         * <p/>
-         * List of stores to be used for store elections. By default GooglePlay, Amazon, SamsungApps and
-         * all installed OpenStores are used.
-         * <p/>
-         * To specify your own list, you need to instantiate Appstore object manually.
-         * GooglePlay, Amazon and SamsungApps could be instantiated directly. OpenStore can be discovered
-         * using {@link OpenIabHelper#discoverOpenStores(Context, List, Options)}
-         * <p/>
-         * If you put only your instance of Appstore in this list OpenIAB will use it
-         * <p/>
-         * TODO: consider to use AppstoreFactory.get(storeName) -> Appstore instance
+         * @deprecated Use
+         *             {@link org.onepf.oms.OpenIabHelper.Options#getAvailableStores()}
+         *             Will be private since 1.0.
+         *             <p/>
+         *             List of stores to be used for store elections. By default
+         *             GooglePlay, Amazon and all installed OpenStores are used.
+         *             <p/>
+         *             To specify your own list, you need to instantiate
+         *             Appstore object manually. GooglePlay and Amazon could be
+         *             instantiated directly. OpenStore can be discovered using
+         *             {@link OpenIabHelper#discoverOpenStores(Context, List, Options)}
+         *             <p/>
+         *             If you put only your instance of Appstore in this list
+         *             OpenIAB will use it
+         *             <p/>
+         *             TODO: consider to use AppstoreFactory.get(storeName) ->
+         *             Appstore instance
          */
         public List<Appstore> availableStores;
 
@@ -1216,22 +1178,26 @@ public class OpenIabHelper {
         public int verifyMode = VERIFY_EVERYTHING;
 
         /**
-         * @deprecated Use {@link org.onepf.oms.OpenIabHelper.Options#getStoreKeys()}
-         * Will be private since 1.0.
-         * <p/>
-         * <p/>
-         * storeKeys is map of [ appstore name -> publicKeyBase64 ]
-         * Put keys for all stores you support in this Map and pass it to instantiate {@link OpenIabHelper}
-         * <p/>
-         * <b>publicKey</b> key is used to verify receipt is created by genuine Appstore using
-         * provided signature. It can be found in Developer Console of particular store
-         * <p/>
-         * <b>name</b> of particular store can be provided by local_store tool if you run it on device.
-         * For Google Play OpenIAB uses {@link OpenIabHelper#NAME_GOOGLE}.
-         * <p/>
-         * <p>Note:
-         * AmazonApps and SamsungApps doesn't use RSA keys for receipt verification, so you don't need
-         * to specify it
+         * @deprecated Use
+         *             {@link org.onepf.oms.OpenIabHelper.Options#getStoreKeys()}
+         *             Will be private since 1.0.
+         *             <p/>
+         *             <p/>
+         *             storeKeys is map of [ appstore name -> publicKeyBase64 ]
+         *             Put keys for all stores you support in this Map and pass
+         *             it to instantiate {@link OpenIabHelper}
+         *             <p/>
+         *             <b>publicKey</b> key is used to verify receipt is created
+         *             by genuine Appstore using provided signature. It can be
+         *             found in Developer Console of particular store
+         *             <p/>
+         *             <b>name</b> of particular store can be provided by
+         *             local_store tool if you run it on device. For Google Play
+         *             OpenIAB uses {@link OpenIabHelper#NAME_GOOGLE}.
+         *             <p/>
+         *             <p>
+         *             Note: AmazonApps doesn't use RSA keys for receipt
+         *             verification, so you don't need to specify it
          */
         public Map<String, String> storeKeys = new HashMap<String, String>();
 
@@ -1245,24 +1211,6 @@ public class OpenIabHelper {
          */
         public String[] prefferedStoreNames = new String[]{};
 
-        /**
-         * @deprecated Usr {@link org.onepf.oms.OpenIabHelper.Options#getSamsungCertificationRequestCode()}
-         * Will be private since 1.0.
-         * <p/>
-         * <p/>
-         * Used for SamsungApps setup. Specify your own value if default one interfere your code.
-         * <p>default value is {@link SamsungAppsBillingService#REQUEST_CODE_IS_ACCOUNT_CERTIFICATION}
-         */
-        public int samsungCertificationRequestCode = SamsungAppsBillingService.REQUEST_CODE_IS_ACCOUNT_CERTIFICATION;
-
-        /**
-         * @deprecated Use {@link org.onepf.oms.OpenIabHelper.Options#isSupportFortumo()}.
-         * Will be private since 1.0.
-         * <p/>
-         * <p/>
-         * Is Fortumo supported?
-         */
-        public boolean supportFortumo;
 
         /**
          * @deprecated Use {@link org.onepf.oms.OpenIabHelper.Options.Builder} instead.
@@ -1277,12 +1225,9 @@ public class OpenIabHelper {
                         int discoveryTimeout,
                         @MagicConstant(intValues = {VERIFY_EVERYTHING, VERIFY_ONLY_KNOWN, VERIFY_SKIP}) int verifyMode,
                         boolean supportFortumo,
-                        String[] preferredStoreNames,
-                        int samsungCertificationRequestCode) {
+ String[] preferredStoreNames) {
             this(availableStores, storeKeys, checkInventory, checkInventoryTimeout,
-                    discoveryTimeout, verifyMode, preferredStoreNames,
-                    samsungCertificationRequestCode);
-            this.supportFortumo = supportFortumo;
+                    discoveryTimeout, verifyMode, preferredStoreNames);
         }
 
         private Options(List<Appstore> availableStores,
@@ -1291,8 +1236,7 @@ public class OpenIabHelper {
                         int checkInventoryTimeout,
                         int discoveryTimeout,
                         @MagicConstant(intValues = {VERIFY_EVERYTHING, VERIFY_ONLY_KNOWN, VERIFY_SKIP}) int verifyMode,
-                        String[] preferredStoreNames,
-                        int samsungCertificationRequestCode) {
+ String[] preferredStoreNames) {
             this.checkInventory = checkInventory;
             this.checkInventoryTimeoutMs = checkInventoryTimeout;
             this.availableStores = availableStores;
@@ -1300,23 +1244,6 @@ public class OpenIabHelper {
             this.storeKeys = storeKeys;
             this.prefferedStoreNames = preferredStoreNames;
             this.verifyMode = verifyMode;
-            this.samsungCertificationRequestCode = samsungCertificationRequestCode;
-        }
-
-        /**
-         * Is Fortumo supported?
-         */
-        public boolean isSupportFortumo() {
-            return supportFortumo;
-        }
-
-        /**
-         * Used for SamsungApps setup. Specify your own value if default one interfere your code.
-         * <p/>
-         * default value is {@link org.onepf.oms.appstore.SamsungAppsBillingService#REQUEST_CODE_IS_ACCOUNT_CERTIFICATION}
-         */
-        public int getSamsungCertificationRequestCode() {
-            return samsungCertificationRequestCode;
         }
 
         /**
@@ -1365,16 +1292,19 @@ public class OpenIabHelper {
         }
 
         /**
-         * List of stores to be used for store elections. By default GooglePlay, Amazon, SamsungApps and
-         * all installed OpenStores are used.
+         * List of stores to be used for store elections. By default GooglePlay,
+         * Amazon and all installed OpenStores are used.
          * <p/>
-         * To specify your own list, you need to instantiate Appstore object manually.
-         * GooglePlay, Amazon and SamsungApps could be instantiated directly. OpenStore can be discovered
-         * using {@link OpenIabHelper#discoverOpenStores(android.content.Context, java.util.List, org.onepf.oms.OpenIabHelper.Options)}
+         * To specify your own list, you need to instantiate Appstore object
+         * manually. GooglePlay and Amazon could be instantiated directly.
+         * OpenStore can be discovered using
+         * {@link OpenIabHelper#discoverOpenStores(android.content.Context, java.util.List, org.onepf.oms.OpenIabHelper.Options)}
          * <p/>
-         * If you put only your instance of Appstore in this list OpenIAB will use it
+         * If you put only your instance of Appstore in this list OpenIAB will
+         * use it
          * <p/>
-         * TODO: consider to use AppstoreFactory.get(storeName) -> Appstore instance
+         * TODO: consider to use AppstoreFactory.get(storeName) -> Appstore
+         * instance
          */
         @Nullable
         public List<Appstore> getAvailableStores() {
@@ -1382,18 +1312,21 @@ public class OpenIabHelper {
         }
 
         /**
-         * storeKeys is map of [ appstore name -> publicKeyBase64 ]
-         * Put keys for all stores you support in this Map and pass it to instantiate {@link OpenIabHelper}
+         * storeKeys is map of [ appstore name -> publicKeyBase64 ] Put keys for
+         * all stores you support in this Map and pass it to instantiate
+         * {@link OpenIabHelper}
          * <p/>
-         * <b>publicKey</b> key is used to verify receipt is created by genuine Appstore using
-         * provided signature. It can be found in Developer Console of particular store
+         * <b>publicKey</b> key is used to verify receipt is created by genuine
+         * Appstore using provided signature. It can be found in Developer
+         * Console of particular store
          * <p/>
-         * <b>name</b> of particular store can be provided by local_store tool if you run it on device.
-         * For Google Play OpenIAB uses {@link OpenIabHelper#NAME_GOOGLE}.
+         * <b>name</b> of particular store can be provided by local_store tool
+         * if you run it on device. For Google Play OpenIAB uses
+         * {@link OpenIabHelper#NAME_GOOGLE}.
          * <p/>
-         * <p>Note:
-         * AmazonApps and SamsungApps doesn't use RSA keys for receipt verification, so you don't need
-         * to specify it
+         * <p>
+         * Note: AmazonApps doesn't use RSA keys for receipt verification, so
+         * you don't need to specify it
          */
         @Nullable
         public Map<String, String> getStoreKeys() {
@@ -1430,8 +1363,6 @@ public class OpenIabHelper {
             private int discoveryTimeout = DEFAULT_DISCOVER_TIMEOUT;
             private int checkInventoryTimeout = CHECK_INVENTORY_TIMEOUT;
             private boolean checkInventory = true;
-            private int samsungCertificationRequestCode
-                    = SamsungAppsBillingService.REQUEST_CODE_IS_ACCOUNT_CERTIFICATION;
 
             @MagicConstant(intValues = {VERIFY_EVERYTHING, VERIFY_ONLY_KNOWN, VERIFY_SKIP})
             private int verifyMode = VERIFY_EVERYTHING;
@@ -1621,22 +1552,7 @@ public class OpenIabHelper {
                 return this;
             }
 
-            /**
-             * Set request code for samsung certification.
-             *
-             * @param code Request code. Must be positive value.
-             * @throws java.lang.IllegalArgumentException if code negative or zero value.
-             * @see org.onepf.oms.OpenIabHelper.Options#getSamsungCertificationRequestCode()
-             */
-            public Builder setSamsungCertificationRequestCode(int code) {
-                if (code < 0) {
-                    throw new IllegalArgumentException("Value '" + code +
-                            "' can't be request code. Request code must be a positive value.");
-                }
 
-                this.samsungCertificationRequestCode = code;
-                return this;
-            }
 
             /**
              * @return Create new instance of {@link org.onepf.oms.OpenIabHelper.Options}.
@@ -1656,8 +1572,7 @@ public class OpenIabHelper {
                             checkInventoryTimeout,
                             discoveryTimeout,
                             verifyMode,
-                            preferredStoreNames,
-                            samsungCertificationRequestCode);
+ preferredStoreNames);
                 }
             }
         }
