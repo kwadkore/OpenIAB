@@ -1,18 +1,18 @@
-/*******************************************************************************
- * Copyright 2013 One Platform Foundation
+/*
+ * Copyright 2012-2014 One Platform Foundation
  *
- *       Licensed under the Apache License, Version 2.0 (the "License");
- *       you may not use this file except in compliance with the License.
- *       You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *           http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- *       Unless required by applicable law or agreed to in writing, software
- *       distributed under the License is distributed on an "AS IS" BASIS,
- *       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *       See the License for the specific language governing permissions and
- *       limitations under the License.
- ******************************************************************************/
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package org.onepf.oms.appstore;
 
@@ -22,16 +22,18 @@ import org.onepf.oms.Appstore;
 import org.onepf.oms.AppstoreInAppBillingService;
 import org.onepf.oms.DefaultAppstore;
 import org.onepf.oms.OpenIabHelper;
-import org.onepf.oms.OpenIabHelper.Options;
 
-import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.pm.Signature;
 import android.text.TextUtils;
+
+import org.onepf.oms.SkuManager;
 import org.onepf.oms.appstore.googleUtils.IabException;
 import org.onepf.oms.appstore.googleUtils.IabHelper;
 import org.onepf.oms.appstore.googleUtils.IabResult;
 import org.onepf.oms.appstore.googleUtils.Inventory;
+import org.onepf.oms.util.CollectionUtils;
+import org.onepf.oms.util.Logger;
 
 import java.util.concurrent.CountDownLatch;
 
@@ -40,7 +42,7 @@ import java.util.concurrent.CountDownLatch;
  * {@link #isPackageInstaller(String)} - there is no known reliable way to understand 
  * SamsungApps is installer of Application   
  * If you want SamsungApps to be used for purhases specify it in preffered stores by
- * {@link OpenIabHelper#OpenIabHelper(Context, java.util.Map, String[])} </p>   
+ * {@link OpenIabHelper#OpenIabHelper(android.content.Context, org.onepf.oms.OpenIabHelper.Options)}  </p>
  * 
  * Supported purchase details   
  * <pre>
@@ -60,7 +62,6 @@ import java.util.concurrent.CountDownLatch;
  * @since 10.10.2013
  */
 public class SamsungApps extends DefaultAppstore {
-    private static final String TAG = SamsungApps.class.getSimpleName();
     private static final String SAMSUNG_INSTALLER = "com.sec.android.app.samsungapps";
 
     private static final int IAP_SIGNATURE_HASHCODE = 0x7a7eaf4b;
@@ -70,15 +71,14 @@ public class SamsungApps extends DefaultAppstore {
 
     private AppstoreInAppBillingService billingService;
     private Activity activity;
-    private Options options;
+    private OpenIabHelper.Options options;
     
     // isSamsungTestMode = true -> always returns Samsung Apps is installer and billing is available
     public static boolean isSamsungTestMode;
-    private boolean debugLog;
     
     private Boolean isBillingAvailable;
 
-    public SamsungApps(Activity activity, Options options) {
+    public SamsungApps(Activity activity, OpenIabHelper.Options options) {
         this.activity = activity;
         this.options = options;
     }
@@ -98,9 +98,9 @@ public class SamsungApps extends DefaultAppstore {
         }
         
         if (isSamsungTestMode) {
-            if (debugLog) Log.d(TAG, "isBillingAvailable() billing is supported in test mode.");
+            Logger.d("isBillingAvailable() billing is supported in test mode.");
             isBillingAvailable = true;
-            return isBillingAvailable;
+            return true;
         }
 
         boolean iapInstalled = false;
@@ -113,12 +113,12 @@ public class SamsungApps extends DefaultAppstore {
                 iapInstalled = true;
             }
         } catch (Exception e) {
-            if (debugLog) Log.d(TAG, "isBillingAvailable() Samsung IAP Service is not installed");
+           Logger.d("isBillingAvailable() Samsung IAP Service is not installed");
         }
 
         isBillingAvailable = false;
         if (!iapInstalled) {
-            return isBillingAvailable;
+            return false;
         }
 
         final CountDownLatch mainLatch = new CountDownLatch(1);
@@ -128,12 +128,14 @@ public class SamsungApps extends DefaultAppstore {
                     new Thread(new Runnable() {
                         public void run() {
                             try {
-                                Inventory inventory = getInAppBillingService().queryInventory(true, OpenIabHelper.getAllStoreSkus(OpenIabHelper.NAME_SAMSUNG), null);
-                                if (inventory.mSkuMap != null && inventory.mSkuMap.size() > 0) {
+                                Inventory inventory = getInAppBillingService()
+                                        .queryInventory(true, SkuManager.getInstance()
+                                                .getAllStoreSkus(OpenIabHelper.NAME_SAMSUNG), null);
+                                if (inventory != null && !CollectionUtils.isEmpty(inventory.mSkuMap)) {
                                     isBillingAvailable = true;
                                 }
                             } catch (IabException e) {
-                                Log.e(TAG, "isBillingAvailable() failed", e);
+                                Logger.e("isBillingAvailable() failed", e);
                             } finally {
                                 getInAppBillingService().dispose();
                                 mainLatch.countDown();
@@ -150,7 +152,7 @@ public class SamsungApps extends DefaultAppstore {
         try {
             mainLatch.await();
         } catch (InterruptedException e) {
-            Log.e(TAG, "isBillingAvailable() interrupted", e);
+            Logger.e("isBillingAvailable() interrupted", e);
         }
 
         return isBillingAvailable;
@@ -179,14 +181,13 @@ public class SamsungApps extends DefaultAppstore {
         if (skuParts.length != 2) {
             throw new IllegalArgumentException("Samsung SKU must contain ITEM_GROUP_ID and ITEM_ID.");
         }
-        for (int i = 0; i < skuParts.length; i++) {
-            if (!TextUtils.isDigitsOnly(skuParts[i])) {
-                if (i == 0) {
-                    throw new IllegalArgumentException("Samsung SKU must contain numeric ITEM_GROUP_ID.");
-                } else if (i == 1) {
-                    throw new IllegalArgumentException("Samsung SKU must contain numeric ITEM_ID.");
-                }
-            }
+        String groupId = skuParts[0];
+        String itemId = skuParts[1];
+        if (TextUtils.isEmpty(groupId) || !TextUtils.isDigitsOnly(groupId)) {
+            throw new IllegalArgumentException("Samsung SKU must contain numeric ITEM_GROUP_ID.");
+        }
+        if (TextUtils.isEmpty(itemId)) {
+            throw new IllegalArgumentException("Samsung SKU must contain ITEM_ID.");
         }
     }
 }

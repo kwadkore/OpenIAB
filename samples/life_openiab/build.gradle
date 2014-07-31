@@ -1,0 +1,61 @@
+/*
+ * Copyright 2012-2014 One Platform Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion rootProject.compileSdkVersion
+    buildToolsVersion rootProject.buildToolsVersion
+
+    defaultConfig {
+        minSdkVersion rootProject.minSdkVersion
+        targetSdkVersion rootProject.targetSdkVersion
+        versionCode 12
+        versionName '0.9.7'
+
+        applicationId 'org.onepf.life'
+    }
+
+    signingConfigs {
+        release {
+            storeFile file("life_openiab.keystore")
+            storePassword "android"
+            keyAlias "OpenIab"
+            keyPassword "android"
+        }
+    }
+
+    buildTypes {
+        release {
+            runProguard false
+            proguardFiles 'proguard-project.txt'
+            signingConfig signingConfigs.release
+        }
+    }
+
+    lintOptions {
+        abortOnError false
+    }
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: '*.jar')
+    compile project(':OpenIab Library')
+
+    compile 'com.android.support:support-annotations:+'
+    compile 'com.android.support:support-v4:19.+'
+    compile 'com.google.code.gson:gson:2.2.+'
+}
