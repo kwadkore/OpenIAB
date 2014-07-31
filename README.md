@@ -1,3 +1,5 @@
+This is a forked OpenIAB branch. The functionality has been reduced so that it no longer supports the SamsungApps store or Fortumo. I reduced functionality because the original forced the Google Play store to target my app to armeabi and armeabi-v7a only devices, I planed to stop supporting the SamsungApps store, and I wanted to reduce the package size.
+
 How To add OpenIAB into an app
 =====
 1. Download the latest version of OpenIAB.jar from http://www.onepf.org/openiab and attach it to the project.

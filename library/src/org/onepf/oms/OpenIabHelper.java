@@ -123,24 +123,27 @@ public class OpenIabHelper {
 
     public static final String NAME_GOOGLE = "com.google.play";
     public static final String NAME_AMAZON = "com.amazon.apps";
-    public static final String NAME_TSTORE = "com.tmobile.store";
     public static final String NAME_YANDEX = "com.yandex.store";
     public static final String NAME_NOKIA = "com.nokia.nstore";
 
     /**
-     * @param sku       - application inner SKU
-     * @param storeSku  - shouldn't duplicate already mapped values
-     * @param storeName - @see {@link IOpenAppstore#getAppstoreName()} or {@link #NAME_AMAZON} {@link #NAME_GOOGLE} {@link #NAME_TSTORE}
-     * @deprecated Use {@link org.onepf.oms.SkuManager#mapSku(String, String, String)}
-     * <p/>
-     * Map sku and storeSku for particular store.
-     * <p/>
-     * The best approach is to use SKU that unique in universe like <code>com.companyname.application.item</code>.
-     * Such SKU fit most of stores so it doesn't need to be mapped.
-     * <p/>
-     * If best approach is not applicable use application inner SKU in code (usually it is SKU for Google Play)
-     * and map SKU from other stores using this method. OpenIAB will map SKU in both directions,
-     * so you can use only your inner SKU
+     * @param sku - application inner SKU
+     * @param storeSku - shouldn't duplicate already mapped values
+     * @param storeName - @see {@link IOpenAppstore#getAppstoreName()} or
+     *            {@link #NAME_AMAZON} {@link #NAME_GOOGLE}
+     * @deprecated Use
+     *             {@link org.onepf.oms.SkuManager#mapSku(String, String, String)}
+     *             <p/>
+     *             Map sku and storeSku for particular store.
+     *             <p/>
+     *             The best approach is to use SKU that unique in universe like
+     *             <code>com.companyname.application.item</code>. Such SKU fit
+     *             most of stores so it doesn't need to be mapped.
+     *             <p/>
+     *             If best approach is not applicable use application inner SKU
+     *             in code (usually it is SKU for Google Play) and map SKU from
+     *             other stores using this method. OpenIAB will map SKU in both
+     *             directions, so you can use only your inner SKU
      */
     public static void mapSku(String sku, String storeName, String storeSku) {
         SkuManager.getInstance().mapSku(sku, storeName, storeSku);
