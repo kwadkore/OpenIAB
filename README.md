@@ -56,15 +56,8 @@ https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/
     <!--Open Store-->
     <uses-permission android:name="org.onepf.openiab.permission.BILLING" />
     <!--Amazon requires no permissions -->
-    <!--Samsung Apps-->
-    <uses-permission android:name="com.sec.android.iap.permission.BILLING" />
     <!--Nokia-->
     <uses-permission android:name="com.nokia.payment.BILLING"/>
-    <!--Fortumo-->
-    <uses-permission android:name="android.permission.RECEIVE_SMS"/>
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
-    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
-    <uses-permission android:name="android.permission.SEND_SMS" />
     <!--SlideME-->
     <uses-permission android:name="com.slideme.sam.manager.inapp.permission.BILLING" />
     ```
@@ -87,14 +80,9 @@ https://github.com/onepf/OpenIAB/blob/master/samples/trivialdrive/src/org/onepf/
     -keepattributes *Annotation*
     -dontoptimize
 
-    # SAMSUNG
-    -keep class com.sec.android.iap.**
-    
     # NOKIA
     -keep class com.nokia.payment.iap.aidl.**
 
-    #FORTUMO
-    -keep class mp.** { *; }
     ```
 
 10. Troubleshooting: additional logging is very helpful if you are trying to understand what's wrong with configuration or raise an issue:
@@ -219,43 +207,6 @@ Remember, the SKUs must be unique across your Amazon developer account.
     adb install -i com.amazon.venezia /path/to/YourApp.apk
     ```
 
-
-Samsung Apps
--------------
-1. In the AndroidManifest.xml add the corresponding billing permission
-
-    ```xml
-     <uses-permission android:name="com.sec.android.iap.permission.BILLING" />
-    ```
-
-2. Map the SKUs if required.
-   Remember, Samsung Apps describes an item in terms of Item Group ID and Item ID.
-
-   ```java
-   //format "group_id/item_id"
-   OpenIabHelper.mapSku(SKU_PREMIUM, OpenIabHelper.NAME_SAMSUNG, "100000100696/000001003746");
-   OpenIabHelper.mapSku(SKU_GAS, OpenIabHelper.NAME_SAMSUNG, "100000100696/000001003744");
-   OpenIabHelper.mapSku(SKU_INFINITE_GAS, OpenIabHelper.NAME_SAMSUNG, "100000100696/000001003747");
-   ```
-
-3. Instantiate ``` new OpenIabHelper ``` using an Activity instance.
-   Activity context is required to call  ``` startActivityForResult() ``` for SamsungAccount Activity.
-
-4. In the proguard config file add
-
-    ```proguard
-    # SAMSUNG
-    -keep class com.sec.android.iap.**
-    ```
-5. To test your .apk with SamsungApps following steps are needed:
-    - Ensure SamsungApps is installed on your device
-    - Ensure Samsung IAP Service is installed on your device
-    - Install your .apk with special option to help OpenIAB choose SamsunApps
-    ```bash
-    # install for SamsungApps:
-    adb install -i com.sec.android.app.samsungapps /path/to/YourApp.apk
-    ```
-
 Nokia IAP
 ---------
 1. In the AndroidManifest.xml add the corresponding billing permission
@@ -300,137 +251,6 @@ SlideME
     adb install -i com.slideme.sam.manager /path/to/YourApp.apk
     ```
 
-Fortumo: carrier billing and NOOK
-=================================
-
-Before starting to work with OpenIAB library
------------------------------------------
-Create a <a href="http://fortumo.com/?utm_source=openiab&utm_medium=openiab&utm_campaign=openiab">Fortumo account</a> and add a required number of <a href="http://developers.fortumo.com/in-app-purchasing-on-nook/">NOOK</a> and <a href="http://developers.fortumo.com/in-app-purchasing-on-android/">Android</a> services.
-One service corresponds to one price, e.g. for 3 in-apps with different prices you should create 3 different services.
-
-OpenIAB setup
--------------
-1. Make sure that <a href="https://github.com/onepf/OpenIAB/blob/master/library/libs/FortumoInApp-android-9.1.2-o.jar">FortumoInApp-android-9.1.2-o.jar</a> is attached to the project.
-
-2. In the AndroidManifest.xml add the following permissions
-
-    ```xml
-    <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
-    <uses-permission android:name="android.permission.RECEIVE_SMS" />
-    <uses-permission android:name="android.permission.SEND_SMS" />
-    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
-    ```
-   and declare the Fortumo SDK objects
-
-     ```xml
-     <!-- Declare these objects, this is part of Fortumo SDK,
-         and should not be called directly -->
-      <receiver android:name="mp.MpSMSReceiver">
-            <intent-filter>
-                <action android:name="android.provider.Telephony.SMS_RECEIVED"/>
-            </intent-filter>
-        </receiver>
-        <service android:name="mp.MpService"/>
-        <service android:name="mp.StatusUpdateService"/>
-        <activity android:name="mp.MpActivity"
-                  android:theme="@android:style/Theme.Translucent.NoTitleBar"
-                  android:configChanges="orientation|keyboardHidden|screenSize"/>
-       ```
-    if you want to support devices without sms functionality, add
-
-      ```xml
-      <uses-feature android:name="android.hardware.telephony" android:required="false"/>
-      ```
-3. In the code setup an Options object
-
-    ```java
-    OpenIabHelper.Options.Builder builder = new OpenIabHelper.Options.Builder();
-    //set supportFortumo flag to true
-    builder.setSupportFortumo(true);
-    //or
-    //by the way, you can add other stores object to the list
-    builder.addAvailableStore(new FortumoStore(this));
-    mHelper = new OpenIabHelper(this, builder.build());
-    ```
-4. Add <a href="https://github.com/onepf/AppDF/blob/xsd-for-inapps/specification/inapp-description.xsd">inapps_products.xml</a> (in-app products descriptions in terms similar to Google Play) and
-<a href="https://github.com/onepf/AppDF/blob/xsd-for-inapps/specification/fortumo-products-description.xsd">fortumo_inapps_details.xml</a> (data about your Fortumo services,
-need to be copy-pasted from <a href="http://developers.fortumo.com/getting-started/dashboard-and-reporting/">Dashboard.</a>) files to the assets folder.
-You can find a sample <a href="https://github.com/onepf/OpenIAB/tree/master/samples/trivialdrive/assets">here.</a>
-Example of inapp-products.xml
-
-     ```xml
-     <inapp-products>
-         <!--Zero or more repetitions:-->
-         <items>
-             <!--Zero or more repetitions:-->
-             <item id="sku_gas"
-                   publish-state="published"> <!-- id: the same format as Google SKU, required; published: "published" or "unpublushed", required by the xsd, but is not actually used it the current implementation-->
-                 <summary><!--encapsulates all elements related to description, required-->
-                     <summary-base><!--default strings elements, required-->
-                         <title>1/4 of gas tank</title> <!-- default title, required-->
-                         <description>Some gas to go further</description> <!-- default description, required-->
-                     </summary-base>
-                     <!--Zero or more repetitions:-->
-                     <summary-localization locale="ru_RU"> <!-- locale: [a-z]_[A-Z], required-->
-                         <title>Четверть бака бензина</title> <!-- required -->
-                         <description>Немного топлива, чтобы проехать еще</description> <!-- required -->
-                     </summary-localization>
-                     <summary-localization locale="en_US">
-                         <title>1/4 of gas tank</title>
-                         <description>Some gas to go further</description>
-                     </summary-localization>
-                 </summary>
-                 <price autofill="true"> <!-- autofill: true or false, required by the xsd, but is not used in the current implementation-->
-                     <price-base>1.00</price-base> <!-- default price, required-->
-                     <!--Zero or more repetitions:-->
-                     <price-local country="RU"> <!-- country: [A-Z][A_Z], required-->
-                         30.00</price-local>
-                     <price-local country="EN">1.00</price-local>
-                 </price>
-             </item>
-            ...
-         </items>
-     </inapp-products>
-     ```
-     Example of fortumo_inapps_details.xml.
-
-     ```xml
-     <fortumo-products>
-         <!--
-         <product                    // mapping for particular fortumo service
-             id="sku_gas"            // SKU with rules same to app store SKU
-             service-id="61730610ade8f2f754bb3bd4b0c1fd0e"           // Fortumo serviceId need to be copy-pasted from Dashboard
-             service-inapp-secret="cbc0da3763e59eee2d5a523fe5761346" // Fortumo inapp-secret need to be copy-pasted from Dashboard
-             nook-service-id="61730610ade8f2f754bb3bd4b0c1fd0e"           // Fortumo NOOK serviceId need to be copy-pasted from Dashboard
-             nook-service-inapp-secret="cbc0da3763e59eee2d5a523fe5761346" // Fortumo NOOK inapp-secret need to be copy-pasted from Dashboard
-             consumable="true"/>     // consumable or not - currently is necessary parameter as wellas for Amazon
-         -->
-         <product
-                 id="sku_gas"
-                 service-id="61730610ade8f2f754bb3bd4b0c1fd0e"
-                 service-inapp-secret="cbc0da3763e59eee2d5a523fe5761346"
-                 nook-service-id="f2ca9394861085d34158e09cedd87738"
-                 nook-service-inapp-secret="78629d599dac532856cc2e90dd69e772"
-                 consumable="true"/>
-         <product
-                 id="sku_premium"
-                 service-id="61730610ade8f2f754bb3bd4b0c1fd0e"
-                 service-inapp-secret="cbc0da3763e59eee2d5a523fe5761346"
-                 nook-service-id="f2ca9394861085d34158e09cedd87738"
-                 nook-service-inapp-secret="78629d599dac532856cc2e90dd69e772"
-                 consumable="false"/>
-     </fortumo-products>
-     ```
-     Both files can be created using <a href="http://www.onepf.org/editor/">AppDF Editor.</a>
-
-5. In the proguard config file add
-
-    ```proguard
-     # FORTUMO
-     -keep class mp.** { *; }
-     ```
-
 Unity Plugin
 =====
 There is also an Unity engine [plugin](unity_plugin) that will simplify integration for C#/JavaScript developers. No need to write any java code.
@@ -439,7 +259,7 @@ OpenIAB - Open In-App Billing
 =====
 Uploading Android apps to all the existing Android app stores is a painful process and the [AppDF](/onepf/AppDF)
 project was designed to make it easier. But what is even more difficult for the developers is
-supporting different in-purchase APIs of different app stores. There are already a lot of different In-App Purchase APIs (e.g. Google Play, Amazon Appstore, Nokia Store, Samsung Apps) and the number is still increasing. 
+supporting different in-purchase APIs of different app stores. There are already a lot of different In-App Purchase APIs (e.g. Google Play, Amazon Appstore, Nokia Store) and the number is still increasing. 
 OpenIAB is an open source library which provides an easy way for the developers to develop their apps/games in a way that one APK will work in all the stores and automatically use the right in-app purchase API under each store. OpenIAB also provides an open in-app billing API that stores could implement to support all the built APK files using this library. 
 Currently there are alreay 5 stores that support the Open API: <a href="http://store.yandex.com/">Yandex.Store</a>,  <a href="http://slideme.org/">SlideME</a>, <a href="http://www.appland.se/">Appland</a>, <a href="http://www.aptoide.com/">Aptoide</a> and <a href="http://www.openmobileww.com/#!appmall/cunq">AppMall</a>. The open stores don't need extra libraries to be included with your project, only OpenIAB is required to support all of them.
 For developers it means that in most cases they don't even need to recompile their apps for a new open store. The only thing that can be reqired is to add an RSA key if purchase verification is on the library side.
