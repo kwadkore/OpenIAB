@@ -60,15 +60,6 @@ android {
     lintOptions {
         abortOnError false
     }
-
-    productFlavors {
-        noFortumo {
-            buildConfigField "boolean", "FORTUMO_ENABLE", "false"
-        }
-        complete {
-            buildConfigField "boolean", "FORTUMO_ENABLE", "true"
-        }
-    }
 }
 
 dependencies {

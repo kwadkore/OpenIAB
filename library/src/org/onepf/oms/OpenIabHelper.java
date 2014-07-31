@@ -108,10 +108,6 @@ public class OpenIabHelper {
     private int setupState = SETUP_RESULT_NOT_STARTED;
 
 
-    // Is an asynchronous operation in progress?
-    // (only one at a time can be in progress)
-    private boolean mAsyncInProgress = false;
-
     // (for logging/debugging)
     // if mAsyncInProgress == true, what asynchronous operation is in progress?
     private String mAsyncOperation = "";
@@ -312,12 +308,11 @@ public class OpenIabHelper {
     private static boolean useNew = true;
 
     /**
-     * Discover all available stores and select the best billing service.
-     * If the flag {@link Options#checkInventory} is set to true, stores with existing inventory are checked first. If Fortumo is added as an
-     * available store or the flag {@link Options#supportFortumo} is set to true, it also will be checked for an inventory.
+     * Discover all available stores and select the best billing service. If the
+     * flag {@link Options#checkInventory} is set to true, stores with existing
+     * inventory are checked first.
      * <p/>
-     * Should be called from UI thread
-     *
+     * Should be called from UI thread.
      * @param listener - called when setup is completed
      */
     public void startSetup(final IabHelper.OnIabSetupFinishedListener listener) {
@@ -1019,14 +1014,12 @@ public class OpenIabHelper {
 //                    operation + ") because another async operation(" + mAsyncOperation + ") is in progress.");
 //        }
         mAsyncOperation = operation;
-        mAsyncInProgress = true;
         Logger.d("Starting async operation: ", operation);
     }
 
     void flagEndAsync() {
         Logger.d("Ending async operation: ", mAsyncOperation);
         mAsyncOperation = "";
-        mAsyncInProgress = false;
     }
 
     private static String setupStateToString(int setupState) {
@@ -1218,17 +1211,6 @@ public class OpenIabHelper {
         public Options() {
         }
 
-        private Options(List<Appstore> availableStores,
-                        Map<String, String> storeKeys,
-                        boolean checkInventory,
-                        int checkInventoryTimeout,
-                        int discoveryTimeout,
-                        @MagicConstant(intValues = {VERIFY_EVERYTHING, VERIFY_ONLY_KNOWN, VERIFY_SKIP}) int verifyMode,
-                        boolean supportFortumo,
- String[] preferredStoreNames) {
-            this(availableStores, storeKeys, checkInventory, checkInventoryTimeout,
-                    discoveryTimeout, verifyMode, preferredStoreNames);
-        }
 
         private Options(List<Appstore> availableStores,
                         Map<String, String> storeKeys,
@@ -1555,27 +1537,21 @@ public class OpenIabHelper {
 
 
             /**
-             * @return Create new instance of {@link org.onepf.oms.OpenIabHelper.Options}.
+             * @return Create new instance of
+             *         {@link org.onepf.oms.OpenIabHelper.Options}.
              */
             public Options build() {
-                List<Appstore> availableStores = CollectionUtils.isEmpty(this.availableStores) ? null :
-                        Collections.unmodifiableList(this.availableStores);
-                Map<String, String> storeKeys = CollectionUtils.isEmpty(this.storeKeys) ? null :
-                        Collections.unmodifiableMap(this.storeKeys);
-                String[] preferredStoreNames = CollectionUtils.isEmpty(this.preferredStoreNames) ? null :
-                        this.preferredStoreNames.toArray(new String[this.preferredStoreNames.size()]);
+                List<Appstore> availableStores = CollectionUtils.isEmpty(this.availableStores) ? null
+                        : Collections.unmodifiableList(this.availableStores);
+                Map<String, String> storeKeys = CollectionUtils.isEmpty(this.storeKeys) ? null
+                        : Collections.unmodifiableMap(this.storeKeys);
+                String[] preferredStoreNames = CollectionUtils.isEmpty(this.preferredStoreNames) ? null
+                        : this.preferredStoreNames.toArray(new String[this.preferredStoreNames
+                                .size()]);
 
-                    return new Options(
-                            availableStores,
-                            storeKeys,
-                            checkInventory,
-                            checkInventoryTimeout,
-                            discoveryTimeout,
-                            verifyMode,
- preferredStoreNames);
-                }
+                return new Options(availableStores, storeKeys, checkInventory,
+                        checkInventoryTimeout, discoveryTimeout, verifyMode, preferredStoreNames);
             }
         }
-
-
+    }
 }
